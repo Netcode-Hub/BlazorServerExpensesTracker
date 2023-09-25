@@ -1,0 +1,218 @@
+﻿@page "/manage-expenses"
+@page "/manage-expenses/{Id:int}"
+
+
+@inject ServiceInterface service;
+@inject NavigationManager navigateMgr;
+@inject SfDialogService DialogService
+
+<div class="row" style="margin-top:8rem">
+    <div class="col-md-10 mt-5">
+        @* Display Expenses *@
+
+        <div class="card mt-5">
+            <div class="card-header">
+                <h5 class="fw-bold" style="font-family:Zyana">Manage Expenses</h5>
+            </div>
+            <div class="card-body" style="font-family:Zyana">
+                <SfGrid @ref="grid" Toolbar="Toolbaritems" DataSource="@AllExpenses" AllowPaging="true" AllowSelection="true" AllowSorting="true" AllowResizing="true" style="font-family:Zyana">
+                    <GridPageSettings PageSize="10"></GridPageSettings>
+                    <GridEvents OnToolbarClick="ToolbarClickHandler" TValue="Expenses" RowSelected="RowSelectedHandler"></GridEvents>
+                    <GridColumns>
+                        <GridColumn Field=@nameof(Expenses.Name) HeaderText="Expenses Name" Width="200"></GridColumn>
+                        <GridColumn Field=@nameof(Expenses.Amount) HeaderText="Expenses Amount" Format="C2" TextAlign="TextAlign.Right" Width="200"></GridColumn>
+                        <GridColumn Field=@nameof(Expenses.DateAdded) HeaderText=" Expenses Date" Format="d" Type="ColumnType.Date" TextAlign="TextAlign.Right" Width="150"></GridColumn>
+                    </GridColumns>
+                </SfGrid>
+            </div>
+            <div class="card-footer" style="font-family:Zyana">
+                <h6 class="text-muted">Designed by Netcode-Hub</h6>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div id="target">
+    @* Add or Update Expenses Dialog box *@
+    <SfDialog Width="450px" @ref="sfDialog" Height="500px" ShowCloseIcon="true" IsModal="true" AllowDragging="true" Visible="ShowDislogBox">
+        <DialogEvents Closed="@ClosedHandler"></DialogEvents>
+        <DialogTemplates>
+            <Header>My Expenses</Header>
+            <Content>
+                <EditForm Model="ExpensesContainer" OnValidSubmit="HandleEvent">
+                    <DataAnnotationsValidator></DataAnnotationsValidator>
+                    <ValidationSummary></ValidationSummary>
+                    <div class="card" style="font-family:Zyana">
+                        <div class="card-header fw-bold">@DialogBoxTitle</div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label class="form-label" for="Name">Expenses Name</label>
+                                <InputText class="form-control" id="Name" @bind-Value="ExpensesContainer.Name"></InputText>
+                                <ValidationMessage For="(()=>ExpensesContainer.Name)"></ValidationMessage>
+                            </div>
+                            <div class="form-group mt-2">
+                                <label class="form-label" for="amount">Expenses Amount</label>
+                                <InputNumber class="form-control" id="amount" @bind-Value="ExpensesContainer.Amount"></InputNumber>
+                                <ValidationMessage For="(()=>ExpensesContainer.Amount)"></ValidationMessage>
+                            </div>
+                            <div class="form-group mt-2">
+                                <label class="form-label" for="date">Choose Date</label>
+                                <SfDatePicker TValue="DateTime?" Value="@DateValue">
+                                    <DatePickerEvents TValue="DateTime?" ValueChange="OnChange"></DatePickerEvents>
+                                </SfDatePicker>
+                                <ValidationMessage For="(()=>DateValue)"></ValidationMessage>
+                            </div>
+                            <div>
+                            </div>
+                        </div>
+
+                        <div class="card-footer">
+                            <button type="submit" class="btn btn-outline-primary btn-lg">
+                                <i class="oi oi-plus fs-5"></i> Add Expenses
+                            </button>
+                        </div>
+                    </div>
+
+                </EditForm>
+            </Content>
+        </DialogTemplates>
+
+    </SfDialog>
+</div>
+
+<style>
+    #target {
+        height: 600px;
+    }
+</style>
+@code {
+    [Parameter] public int Id { get; set; }
+
+    List<ItemModel> Toolbaritems = new();
+
+    public bool ShowDislogBox { get; set; } = false;
+    SfDialog sfDialog = new();
+    SfGrid<Expenses> grid { get; set; }
+    private string DialogBoxTitle { get; set; } = "Add Expense";
+    public Expenses ExpensesContainer { get; set; } = new();
+    public List<Expenses> AllExpenses { get; set; } = new();
+
+    public Expenses SelectedRow { get; set; }
+
+   
+    protected override async Task OnInitializedAsync()
+    {
+        //populate datagrid tools
+        Toolbaritems.Add(new ItemModel() { Text = "Add", TooltipText = "Add a new Expenses", PrefixIcon = "e-add" });
+        Toolbaritems.Add(new ItemModel() { Text = "Delete", TooltipText = "Delete Expenses", PrefixIcon = "e-delete" });
+        Toolbaritems.Add(new ItemModel() { Text = "Edit", TooltipText = "Edit Expenses", PrefixIcon = "e-edit" });
+        // load data from a method as soon as page loads
+        await LoadData();
+    }
+
+    // Get list of all expenses
+    private async Task LoadData()
+    {
+        var result = await service.GetAllExpensesAsync();
+        AllExpenses?.Clear();
+
+        if (result != null)
+        {
+            foreach (var i in result.OrderByDescending(_ => _.DateAdded))
+                AllExpenses.Add(i);
+        }
+    }
+
+    //Add or update expenses
+    private async Task HandleEvent()
+    {
+        //await service.ClearAll();
+        var (flag, message) = await service.AddOrUpdateExpensesAsync(ExpensesContainer);
+
+        if (flag)
+        {
+            await DialogService.AlertAsync(message, ExpensesContainer.Name);
+            ExpensesContainer = new Expenses();
+            await sfDialog.HideAsync();
+            navigateMgr.NavigateTo("manage-expenses", true);
+        }
+        else
+        {
+            await DialogService.AlertAsync(message, "Alert");
+            return;
+        }
+    }
+
+    public DateTime? DateValue { get; set; }
+    private void OnChange(Syncfusion.Blazor.Calendars.ChangedEventArgs<DateTime?> args)
+    {
+        DateValue = args.Value;
+        ExpensesContainer.DateAdded = DateValue;
+        StateHasChanged();
+    }
+
+
+
+    public async Task ToolbarClickHandler(Syncfusion.Blazor.Navigations.ClickEventArgs args)
+    {
+        if (args.Item.Text == "Add")
+        {
+            ExpensesContainer = new Expenses();
+            await sfDialog.ShowAsync();
+            return;
+        }
+
+
+
+        if (args.Item.Text == "Edit")
+        {
+            if (SelectedRow is null || SelectedRow.Id <= 0)
+            {
+                await DialogService.AlertAsync("No row is selected", "Please select row");
+                return;
+            }
+
+            ExpensesContainer = new Expenses();
+            ExpensesContainer = SelectedRow;
+            DateValue = SelectedRow.DateAdded;
+            ShowDislogBox = true;
+            await sfDialog.ShowAsync();
+
+        }
+
+        if (args.Item.Text == "Delete")
+        {
+            bool confirm = await DialogService.ConfirmAsync($"Are you sure you wanna delete {SelectedRow.Name}", "Confirm Delete");
+            if (confirm)
+            {
+                await service.DeleteExpensesAsync(SelectedRow.Id);
+                SelectedRow = new Expenses();
+                navigateMgr.NavigateTo("manage-expenses", true);
+            }
+
+
+        }
+    }
+
+    private void RowSelectedHandler(RowSelectEventArgs<Expenses> args)
+    {
+        SelectedRow = args.Data;
+    }
+
+    protected async override Task OnParametersSetAsync()
+    {
+        if (Id == 1)
+        {
+            ShowDislogBox = true;
+            await sfDialog.ShowAsync();
+
+        }
+    }
+
+    public async Task ClosedHandler(CloseEventArgs args)
+    {
+        ShowDislogBox = false;
+        await sfDialog.HideAsync();
+    }
+}

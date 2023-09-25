@@ -1,0 +1,20 @@
+﻿@using Syncfusion.Blazor.Navigations
+
+<SfSidebar Width="80px" Position="SidebarPosition.Left" IsOpen="true" EnableDock="true" class="bg-warning-subtle">
+    <ChildContent>
+        <div class="text-primary nav-scrollable">
+            <nav class="vstack gap-4 text-center" style="margin-top:17rem">
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="" Match="NavLinkMatch.All" title="Home">
+                        <span class="oi oi-home fs-3" aria-hidden="true"></span>
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="manage-expenses" Match="NavLinkMatch.All" title="Manage Expenses">
+                        <span class="oi oi-list fs-3" aria-hidden="true"></span>
+                    </NavLink>
+                </div>
+            </nav>
+        </div>
+    </ChildContent>
+</SfSidebar>

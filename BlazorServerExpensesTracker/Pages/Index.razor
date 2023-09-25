@@ -1,0 +1,519 @@
+﻿@page "/"
+
+@inject ServiceInterface service;
+@inject NavigationManager navigateMgr;
+@inject SfDialogService dialogservice;
+
+<div class="row mt-5">
+    @* Header Dashboard *@
+    <div class="col-md-11">
+        <span class="display-6 fw-bold text-primary" style="font-family:Zyana;"><i class="fs-2 text-warning oi oi-dashboard"></i> Expenses Tracker Dashboard </span>
+    </div>
+    <div class="col-md-1">
+        <span class="text-primary fw-bold" style="font-family:Zyana">Welcome</span>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12 col-sm-12" style="background:#ebecf0;">
+        <div class="row mt-5">
+            <div class="col-md-12 col-sm-12 mb-5" style="margin-left:3rem; margin-right:0rem;">
+                <div class="card mt-5 border-0" style="margin-right:5rem">
+                    <div class="card-body" style="background:#f3f4f8;">
+                        @* Phase 1 *@
+                        <div class="row">
+                            <div class="col-md-3 col-sm-12">
+                                <div class="card border-0 bg-white" style="margin-top:-100px; width:300px;height:23.8rem; margin-left:10px; box-shadow: 5px 5px #F3F4F8, -1em 0 .3em #D5D7DC; ">
+                                    <div class="card-body">
+                                        <p class="text-center">
+                                            <h3><sup>$</sup> <span style="font-family:Zyana">@ThisMonthData.Sum(_=>_.Amount)</span></h3>
+                                            <h6 style="font-family:Zyana; font-size:14px; margin-left:20px">Amount to pay for this month</h6>
+                                        </p>
+                                        <p class="text-center">
+                                            <button class="mt-5 btn btn-primary rounded-5" style="width:12rem;" @onclick="AddExpenses">
+                                                <table>
+                                                    <tr>
+                                                        <td><span style="margin-left:-8px; font-family:Zyana">Add Expenses</span></td>
+                                                        <td><span style="margin-left:3rem"><i class="oi oi-arrow-right"></i></span></td>
+                                                    </tr>
+                                                </table>
+                                            </button>
+                                        </p>
+                                        <hr class="mt-4" />
+                                        <p class="mt-3">
+                                            <div class="hstack gap-1" style="font-size:10px;">
+                                                <div class="vstack gap-1">
+                                                    <span>Yesterday : $ @YesterdayExpenses</span>
+                                                    <div class="progress" style="width:100px;height:10px">
+                                                        @{
+                                                            int width = 0;
+                                                            if (ThisMonthData != null && YesterdayExpenses > 0)
+                                                            {
+
+                                                                decimal totalWidth = ThisMonthData.Sum(_ => _.Amount);
+                                                                decimal result = (YesterdayExpenses / totalWidth) * 100;
+
+                                                                if (result <= 0)
+                                                                    width = 0;
+
+                                                                if (result > 0 && result <= 25)
+                                                                    width = 25;
+
+                                                                if (result > 25 && result <= 50)
+                                                                    width = 50;
+
+                                                                if (result > 50 && result <= 75)
+                                                                    width = 75;
+
+                                                                if (result > 75 && result <= 100)
+                                                                    width = 100;
+                                                            }
+                                                        }
+                                                        <div class="progress-bar bg-warning" role="progressbar" style="width:@width% " aria-valuenow="@width" aria-valuemin="0" aria-valuemax="100"></div>
+                                                    </div>
+                                                </div>
+
+                                                @{
+                                                    int Lwidth = 0;
+                                                    if (ThisMonthData != null && LastWeekExpenses > 0)
+                                                    {
+                                                        decimal LtotalWidth = ThisMonthData.Sum(_ => _.Amount);
+                                                        decimal Lresult = (LastWeekExpenses / LtotalWidth) * 100;
+
+                                                        if (Lresult <= 0)
+                                                            Lwidth = 0;
+
+                                                        if (Lresult > 0 && Lresult <= 25)
+                                                            Lwidth = 25;
+
+                                                        if (Lresult > 25 && Lresult <= 50)
+                                                            Lwidth = 50;
+
+                                                        if (Lresult > 50 && Lresult <= 75)
+                                                            Lwidth = 75;
+
+                                                        if (Lresult > 75 && Lresult <= 100)
+                                                            Lwidth = 100;
+                                                    }
+                                                }
+                                                <div class="vstack gap-1">
+                                                    <span>Last Week : $ @LastWeekExpenses</span>
+                                                    <div class="progress" style="width:100px;height:10px">
+                                                        <div class="progress-bar bg-primary" role="progressbar" style="width:@Lwidth%" aria-valuenow="@Lwidth" aria-valuemin="0" aria-valuemax="100"></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 col-sm-12">
+                                <div class="card border-0 p-2" style="margin-top:2.1rem; margin-left:0rem; width:40.3rem; height:15.5rem; font-family:Zyana">
+
+                                    <SfChart Title="Yearly Expenditure" AllowMultiSelection="true">
+                                        <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.Category"></ChartPrimaryXAxis>
+                                        <ChartPrimaryXAxis Title="Month" ValueType="Syncfusion.Blazor.Charts.ValueType.Category"></ChartPrimaryXAxis>
+                                        <ChartPrimaryYAxis Title="Expenses in Dollar"></ChartPrimaryYAxis>
+                                        <ChartTooltipSettings Enable="true" Shared="true"></ChartTooltipSettings>
+                                        <ChartSeriesCollection>
+
+                                            <ChartSeries DataSource="@YearsData" XName="Year" YName="TotalAmount" Type="ChartSeriesType.Column">
+                                                <ChartMarker>
+                                                    <ChartDataLabel Visible="true" EnableRotation="true"></ChartDataLabel>
+                                                </ChartMarker>
+                                            </ChartSeries>
+                                        </ChartSeriesCollection>
+                                    </SfChart>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-sm-12">
+                                <div class="card bg-white border-0" style="width:280px; height:18.5rem; margin-left:15rem; box-shadow: 10px 10px 10px #AAAA">
+                                    <div class="card-body">
+                                        <div class="vstack">
+                                            <h3 class="text-primary text-center mt-4" style="font-family:Zyana">Monthly Balance</h3>
+                                            <div class="text-center mt-3"> <img src="images/load.png" class="card-img" style="width:150px;" /> </div>
+                                            <label class="fw-bold text-primary" style="margin-left:6.2rem; margin-top:-4.3rem; font-family:Zyana">$ @AvailableFund.ToString("##.##")</label>
+                                            <div class="text-center" style="margin-top:4.5rem"><button class="btn btn-warning rounded-4 w-50" @onclick="AddFund"><span style="font-family:Zyana">Update Fund</span></button></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        @*  Phase 2 *@
+                        <div class="row gap-2 mb-4 mt-2" style="margin-left:0.5rem; margin-right:-7.1rem; font-family:Zyana; height:55vh">
+                            <div class="col-md-5 card bg-white border-0" style="font-family:Zyana">
+                                <div class="card-body">
+                                    <SfTab>
+                                        <TabItems>
+                                            <TabItem>
+                                                <ContentTemplate>
+                                                    <SfAccumulationChart Title="Monthly Expenses Details">
+                                                        <AccumulationChartSeriesCollection>
+                                                            <AccumulationChartSeries DataSource="@ThisMonthData" XName="Name" YName="Amount">
+                                                                <AccumulationDataLabelSettings Visible="true" EnableRotation="true"></AccumulationDataLabelSettings>
+                                                            </AccumulationChartSeries>
+                                                        </AccumulationChartSeriesCollection>
+                                                        <AccumulationChartTooltipSettings Enable="true" EnableAnimation="true" EnableTextWrap="true"></AccumulationChartTooltipSettings>
+                                                        <AccumulationChartLegendSettings Visible="true" EnableHighlight="true"></AccumulationChartLegendSettings>
+                                                    </SfAccumulationChart>
+                                                </ContentTemplate>
+                                                <ChildContent>
+                                                    <TabHeader Text="Monthly"></TabHeader>
+                                                </ChildContent>
+                                            </TabItem>
+
+                                            <TabItem>
+                                                <ContentTemplate>
+
+                                                    <SfAccumulationChart Title="Last Year Expenses Details">
+                                                        <AccumulationChartSeriesCollection>
+                                                            <AccumulationChartSeries DataSource="@MonthsInLastYear" XName="Month" YName="TotalAmount">
+                                                                <AccumulationDataLabelSettings Visible="true" EnableRotation="true"></AccumulationDataLabelSettings>
+                                                            </AccumulationChartSeries>
+                                                        </AccumulationChartSeriesCollection>
+                                                        <AccumulationChartTooltipSettings Enable="true" EnableAnimation="true" EnableTextWrap="true"></AccumulationChartTooltipSettings>
+                                                        <AccumulationChartLegendSettings Visible="true" EnableHighlight="true"></AccumulationChartLegendSettings>
+                                                    </SfAccumulationChart>
+                                                </ContentTemplate>
+                                                <ChildContent>
+                                                    <TabHeader Text="Yearly"></TabHeader>
+                                                </ChildContent>
+                                            </TabItem>
+                                        </TabItems>
+                                    </SfTab>
+                                </div>
+                            </div>
+                            <div class="col-md-6  bg-white">
+                                <div class="card border-0" style="height:55vh; overflow-y:scroll">
+                                    <div class="card-title text-center fw-bold text-success m-2 mt-3">Notes Taken   <hr /></div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            @if (MyNotes is not null)
+                                            {
+                                                foreach (var item in MyNotes.OrderByDescending(_ => _.DateAdded))
+                                                {
+                                                    <div class="col-md-2 text-muted mt-2" style="font-family:10px">@item.DateAdded!.Value.ToShortDateString()</div>
+                                                    <div class="col-md-9 mt-2">@item.Description</div>
+                                                    <div class="col-md-1 mt-1"><i class="text-danger oi oi-trash" @onclick="(async ()=> await HandleNoteDelete(item.Id))" style="cursor:pointer"></i></div>
+                                                    <hr class="text-primary" />
+                                                }
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-footer">
+                                    <button class="btn btn-priamry" @onclick="AddNote"><i class="oi oi-plus"></i> Add Note</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+<div id="target">
+    @* Add  fund Dialog box *@
+    <SfDialog Width="450px" @ref="sfDialog" ShowCloseIcon="true" IsModal="true" AllowDragging="true" Visible="ShowDislogBox">
+        <DialogEvents Closed="@ClosedHandler"></DialogEvents>
+        <DialogTemplates>
+            <Header>My Funds</Header>
+            <Content>
+                <EditForm Model="MyFund" OnValidSubmit="HandleEvent">
+                    <DataAnnotationsValidator></DataAnnotationsValidator>
+                    <ValidationSummary></ValidationSummary>
+                    <div class="card" style="font-family:Zyana">
+                        <div class="card-header fw-bold">Add Funds</div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label class="form-label" for="amount">Fund Amount</label>
+                                <InputNumber class="form-control" id="amount" @bind-Value="MyFund.Amount"></InputNumber>
+                                <ValidationMessage For="(()=>MyFund.Amount)"></ValidationMessage>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <button type="submit" class="btn btn-warning btn-md">
+                                <i class="oi oi-plus fs-6"></i> Add Funds
+                                <i class="oi oi-dollar fs-6"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                </EditForm>
+            </Content>
+        </DialogTemplates>
+
+    </SfDialog>
+
+    @* Add Note *@
+    <SfDialog Width="450px" @ref="sfDialogNote" ShowCloseIcon="true" IsModal="true" AllowDragging="true" Visible="ShowDislogBoxNote">
+        <DialogEvents Closed="@ClosedNoteHandler"></DialogEvents>
+        <DialogTemplates>
+            <Header>My Funds</Header>
+            <Content>
+                <EditForm Model="MyNote" OnValidSubmit="HandleNoteEvent">
+                    <DataAnnotationsValidator></DataAnnotationsValidator>
+                    <ValidationSummary></ValidationSummary>
+                    <div class="card" style="font-family:Zyana">
+                        <div class="card-header fw-bold">Add Note</div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label class="form-label" for="date">Choose Date</label>
+                                <SfDatePicker TValue="DateTime?" Value="@NoteDateValue" AllowEdit="false">
+                                    <DatePickerEvents TValue="DateTime?" ValueChange="OnNoteDateChange"></DatePickerEvents>
+                                </SfDatePicker>
+                                <ValidationMessage For="(()=>NoteDateValue)"></ValidationMessage>
+                            </div>
+                            <div class="form-group mt-2">
+                                <label class="form-label" for="date">Choose Date</label>
+                                <InputTextArea @bind-Value="MyNote.Description" class="form-control" DisplayName="Pleas enter your note here..."></InputTextArea>
+                                <ValidationMessage For="(()=>MyNote.Description)"></ValidationMessage>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <button type="submit" class="btn btn-warning btn-md">
+                                <i class="oi oi-plus fs-6"></i> Add Note
+                                <i class="oi oi-pencil fs-6"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                </EditForm>
+            </Content>
+        </DialogTemplates>
+
+    </SfDialog>
+</div>
+
+<style>
+    .changeFont {
+        font-family: Zyana;
+    }
+
+    #target {
+        height: 600px;
+    }
+
+</style>
+
+@code {
+    List<Expenses> AllExpensesData { get; set; } = new();
+    List<Expenses> AllYearsData { get; set; } = new();
+    List<Expenses> LastYearData { get; set; } = new();
+    List<Expenses> ThisMonthData { get; set; } = new();
+
+    List<ExpensesModelForMonth> MonthsInLastYear { get; set; } = new();
+    List<ExpensesModelForYear> YearsData { get; set; } = new();
+
+    protected async override Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        AllExpensesData = await service.GetAllExpensesAsync();
+        MyNotes = await service.GetNoteAsync();
+
+        if (AllExpensesData is null)
+        {
+            AllExpensesData?.Clear();
+            AllYearsData?.Clear();
+            LastYearData?.Clear();
+            ThisMonthData?.Clear();
+            MonthsInLastYear?.Clear();
+            YearsData?.Clear();
+            return;
+        }
+        await PrepareAllExpensesChart();
+    }
+
+    private async Task PrepareAllExpensesChart()
+    {
+        var groupedData = AllExpensesData.GroupBy(item => item.DateAdded!.Value.Year);
+        foreach (var group in groupedData)
+        {
+            //populate last year
+            if (group.Key == DateTime.Now.AddYears(-1).Date.Year)
+            {
+                foreach (var item in group)
+                    LastYearData.Add(item);
+            }
+
+            // populate all years data year
+            foreach (var item in group)
+                AllYearsData.Add(item);
+        }
+
+        //populate this month
+        ThisMonthData = AllExpensesData.Where(_ => _.DateAdded!.Value.Month == DateTime.Now.Month && _.DateAdded!.Value.Year == DateTime.Now.Year).ToList();
+        // Call this method to get the available fund.
+        await GetAvailableFund();
+        GetYesterdayExpenses();
+        GetLastWeekData();
+
+
+        //Group by months with Last Year record and total the Amount
+        var result = LastYearData.GroupBy(d => new { d.DateAdded.Value.Month, d.Name }).Select(g => new { Month = g.Key.Month, Name = g.Key.Name, TotalAmount = g.Sum(d => d.Amount) });
+        var groupByMonthNumber = result.GroupBy(d => new { d.Month }).Select(g => new { Month = g.Key.Month, Name = g.Key.Month, TotalAmount = g.Sum(d => d.TotalAmount) });
+
+        List<ExpensesModelForMonth> list = new();
+        foreach (var i in groupByMonthNumber)
+            list.Add(new ExpensesModelForMonth() { Month = CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(i.Month), TotalAmount = i.TotalAmount, MonthNumber = i.Month });
+
+        MonthsInLastYear.AddRange(list.OrderBy(_ => _.MonthNumber));
+
+
+        //Group by Years and total the Amount
+        var yearResult = AllYearsData.GroupBy(d => new { d.DateAdded.Value.Year, d.Name }).Select(g => new { Year = g.Key.Year, Name = g.Key.Name, TotalAmount = g.Sum(d => d.Amount) });
+        List<ExpensesModelForYear> yearList = new();
+        foreach (var r in yearResult)
+            yearList.Add(new ExpensesModelForYear() { Year = r.Year, TotalAmount = r.TotalAmount });
+
+        YearsData.AddRange(yearList.OrderBy(_ => _.Year));
+    }
+
+    private void AddExpenses()
+    {
+        navigateMgr.NavigateTo($"manage-expenses/{1}");
+    }
+
+
+    //Add fund
+    decimal YesterdayExpenses = 0.00m;
+    decimal LastWeekExpenses = 0.00m;
+    decimal AvailableFund = 0.00m;
+
+    public Fund MyFund = new();
+    SfDialog sfDialog = new();
+    public bool ShowDislogBox { get; set; } = false;
+
+    private async Task AddFund()
+    {
+        ShowDislogBox = true;
+        await sfDialog.ShowAsync();
+    }
+    public async Task ClosedHandler(CloseEventArgs args)
+    {
+        ShowDislogBox = false;
+        await sfDialog.HideAsync();
+    }
+
+    private async Task HandleEvent()
+    {
+        if (MyFund.Amount == 0)
+        {
+            await dialogservice.AlertAsync("Please enter amount", "Amount must not be 0");
+            return;
+        }
+
+        int result = await service.AddFundAsync(MyFund);
+        switch (result)
+        {
+            case 1:
+                await dialogservice.AlertAsync("Funds added", " Process Completed");
+                await Hide();
+                await GetAvailableFund();
+                MyFund = new Fund();
+                break;
+            case 2:
+                await dialogservice.AlertAsync("Funds updated", " Process Completed");
+                await Hide();
+                await GetAvailableFund();
+                MyFund = new Fund();
+                break;
+            case 3 or 4:
+                await dialogservice.AlertAsync("Amount cannot be negative", " Process Not Completed");
+                break;
+
+            case -1:
+                await dialogservice.AlertAsync("Unknow error occurred", " Process Not Successfull");
+                break;
+        }
+    }
+
+    private async Task Hide()
+    {
+        ShowDislogBox = false;
+        await sfDialog.HideAsync();
+    }
+
+    private async Task GetAvailableFund()
+    {
+        decimal fund = await service.GetAvailableFund();
+        if (fund > 0)
+            AvailableFund = fund - ThisMonthData.Sum(_ => _.Amount);
+        AvailableFund = fund;
+    }
+
+    private void GetYesterdayExpenses()
+    {
+        YesterdayExpenses = ThisMonthData.Where(_ => _.DateAdded!.Value.Date == DateTime.Now.AddDays(-1).Date).ToList().Sum(_ => _.Amount);
+    }
+
+    private void GetLastWeekData()
+    {
+        var lastWeek = ThisMonthData.OrderByDescending(_ => _.DateAdded!.Value.Date).Take(7).ToList();
+        if (lastWeek is not null)
+            LastWeekExpenses = lastWeek.Sum(_ => _.Amount);
+    }
+
+    // Note
+
+    public Note MyNote { get; set; } = new();
+    public List<Note> MyNotes { get; set; } = new();
+    public bool ShowDislogBoxNote { get; set; } = false;
+    SfDialog sfDialogNote = new();
+
+    public DateTime? NoteDateValue { get; set; }
+    private void OnNoteDateChange(Syncfusion.Blazor.Calendars.ChangedEventArgs<DateTime?> args)
+    {
+        NoteDateValue = args.Value.Value.Date;
+        MyNote.DateAdded = NoteDateValue.Value.Date;
+        StateHasChanged();
+    }
+
+    //Add or update expenses
+    private async Task HandleNoteEvent()
+    {
+        //await service.ClearAll();
+        var (flag, message) = await service.AddNoteAsync(MyNote);
+
+        if (flag)
+        {
+            await dialogservice.AlertAsync(message, "Process completed");
+            MyNote = new Note();
+            await sfDialog.HideAsync();
+            navigateMgr.NavigateTo("", true);
+        }
+        else
+        {
+            await dialogservice.AlertAsync(message, "Alert");
+            return;
+        }
+    }
+
+    public async Task ClosedNoteHandler(CloseEventArgs args)
+    {
+        ShowDislogBoxNote = false;
+        await sfDialogNote.HideAsync();
+    }
+
+    private async Task AddNote()
+    {
+        ShowDislogBoxNote = true;
+        await sfDialogNote.ShowAsync();
+    }
+
+    private async Task HandleNoteDelete(int id)
+    {
+        await service.DeleteNoteAsync(id);
+        navigateMgr.NavigateTo("", true);
+    }
+}
